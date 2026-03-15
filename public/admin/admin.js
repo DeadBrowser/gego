@@ -20,7 +20,7 @@ $('#btnLogin').addEventListener('click', async () => {
 
     try {
         $('#btnLogin').textContent = 'Connecting...';
-        const res = await api('/api/admin/stats');
+        const res = await api('/api/stats');
         if (res.error) throw new Error(res.error);
 
         // Save credentials
@@ -65,7 +65,7 @@ function renderStats(data) {
 
 // ─── Keys ────────────────────────────────────────────────────────────────────
 async function loadKeys() {
-    const data = await api('/api/admin/keys');
+    const data = await api('/api/keys');
     if (data.error) return;
 
     const tbody = $('#keysBody');
@@ -105,7 +105,7 @@ async function loadKeys() {
     }
 
     // Also refresh stats
-    const stats = await api('/api/admin/stats');
+    const stats = await api('/api/stats');
     if (!stats.error) renderStats(stats);
 }
 
@@ -125,7 +125,7 @@ $('#btnConfirmCreate').addEventListener('click', async () => {
 
     $('#btnConfirmCreate').textContent = 'Creating...';
 
-    const res = await api('/api/admin/keys', 'POST', { label, maxDevices, durationDays });
+    const res = await api('/api/keys', 'POST', { label, maxDevices, durationDays });
     if (res.success) {
         showToast(`Key created: ${res.key.license}`);
         copyKey(res.key.license);
@@ -139,13 +139,13 @@ $('#btnConfirmCreate').addEventListener('click', async () => {
 
 // ─── Toggle/Delete ───────────────────────────────────────────────────────────
 window.toggleKey = async function (license) {
-    await api('/api/admin/keys/toggle', 'POST', { licenseKey: license });
+    await api('/api/toggle', 'POST', { licenseKey: license });
     loadKeys();
 };
 
 window.deleteKey = async function (license) {
     if (!confirm(`Delete key ${license}?`)) return;
-    await api('/api/admin/keys', 'DELETE', { licenseKey: license });
+    await api('/api/keys', 'DELETE', { licenseKey: license });
     loadKeys();
 };
 
