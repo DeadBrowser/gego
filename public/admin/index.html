@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoStealth Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <div class="login-logo">🛡️</div>
+            <h1>GeoStealth</h1>
+            <p>Admin Panel</p>
+            <!-- API URL is hardcoded in admin.js -->
+            <div class="login-field">
+                <input type="text" id="adminUsername" placeholder="Username">
+            </div>
+            <div class="login-field">
+                <input type="password" id="adminPassword" placeholder="Password">
+            </div>
+            <button id="btnLogin" class="btn btn-primary btn-full">Connect</button>
+            <div id="loginError" class="error-msg"></div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="dashboard" style="display:none">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <span class="logo">🛡️ GeoStealth</span>
+                <span class="badge">Admin</span>
+            </div>
+            <div class="header-right">
+                <span id="statusDot" class="status-dot"></span>
+                <span id="apiStatus">Connected</span>
+                <button id="btnLogout" class="btn btn-ghost">Logout</button>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <section class="stats-row">
+            <div class="stat-card">
+                <div class="stat-icon">🔑</div>
+                <div class="stat-body">
+                    <div class="stat-value" id="statTotal">0</div>
+                    <div class="stat-label">Total Keys</div>
+                </div>
+            </div>
+            <div class="stat-card stat-green">
+                <div class="stat-icon">✅</div>
+                <div class="stat-body">
+                    <div class="stat-value" id="statActive">0</div>
+                    <div class="stat-label">Active Keys</div>
+                </div>
+            </div>
+            <div class="stat-card stat-blue">
+                <div class="stat-icon">📱</div>
+                <div class="stat-body">
+                    <div class="stat-value" id="statDevices">0</div>
+                    <div class="stat-label">Online Devices</div>
+                </div>
+            </div>
+            <div class="stat-card stat-red">
+                <div class="stat-icon">⏰</div>
+                <div class="stat-body">
+                    <div class="stat-value" id="statExpired">0</div>
+                    <div class="stat-label">Expired</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Actions -->
+        <section class="actions-bar">
+            <h2>License Keys</h2>
+            <div class="actions-right">
+                <button id="btnRefresh" class="btn btn-ghost">↻ Refresh</button>
+                <button id="btnCreate" class="btn btn-primary">+ Create Key</button>
+            </div>
+        </section>
+
+        <!-- Create Key Form (hidden by default) -->
+        <section id="createForm" class="create-form" style="display:none">
+            <div class="form-row">
+                <div class="field">
+                    <label>Label</label>
+                    <input type="text" id="newLabel" placeholder="e.g. Client #1">
+                </div>
+                <div class="field">
+                    <label>Max Devices</label>
+                    <input type="number" id="newMaxDevices" value="3" min="1" max="50">
+                </div>
+                <div class="field">
+                    <label>Duration (days)</label>
+                    <input type="number" id="newDuration" value="30" min="0">
+                    <small>0 = never expires</small>
+                </div>
+                <button id="btnConfirmCreate" class="btn btn-primary">Generate</button>
+                <button id="btnCancelCreate" class="btn btn-ghost">Cancel</button>
+            </div>
+        </section>
+
+        <!-- Keys Table -->
+        <section class="table-wrap">
+            <table id="keysTable">
+                <thead>
+                    <tr>
+                        <th>License Key</th>
+                        <th>Label</th>
+                        <th>Devices</th>
+                        <th>Created</th>
+                        <th>Expires</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="keysBody"></tbody>
+            </table>
+            <div id="emptyState" class="empty-state">
+                No keys yet. Click "Create Key" to get started.
+            </div>
+        </section>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+
+</html>
