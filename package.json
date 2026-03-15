@@ -1,0 +1,8 @@
+{
+  "name": "proxy-shield-license-api",
+  "version": "1.0.0",
+  "description": "API for Proxy Shield extension license management",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.8"
+  }
+}
