@@ -29,7 +29,15 @@ export default async function handler(req, res) {
       return res.status(200).json({ valid: false, error: 'License expired' });
     }
 
-    // 2. Update Device Heartbeat and Geo info
+    // 2. Clean up inactive devices (auto-logout after 20 mins)
+    const activeCutoff = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+    await supabase
+      .from('devices')
+      .delete()
+      .eq('license_id', license.id)
+      .lt('last_heartbeat', activeCutoff);
+
+    // 3. Update Device Heartbeat and Geo info
     const { data: existingDevice } = await supabase
       .from('devices')
       .select('id')
@@ -47,17 +55,9 @@ export default async function handler(req, res) {
         .eq('id', existingDevice.id);
       return res.status(200).json({ valid: true });
     } else {
-      // Ifdevice dropped but license is valid, re-register if we want. 
-      // For now, let's treat it as a valid ping but insert it.
-      await supabase
-        .from('devices')
-        .insert({
-          license_id: license.id,
-          device_id: deviceId,
-          last_geo: geo || 'Unknown',
-          last_heartbeat: new Date().toISOString()
-        });
-      return res.status(200).json({ valid: true });
+      // If the device isn't found, it means it was deleted due to inactivity.
+      // Return valid: false so the client logs out.
+      return res.status(200).json({ valid: false, error: 'Session expired due to inactivity' });
     }
 
   } catch (error) {
