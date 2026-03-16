@@ -12,6 +12,10 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' });
 
   try {
+    // Force cleanup before getting counts
+    const activeCutoff = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+    await supabase.from('devices').delete().lt('last_heartbeat', activeCutoff);
+
     const { data: keys, error } = await supabase.from('licenses').select('is_active, expires_at');
     if (error) throw error;
 
