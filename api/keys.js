@@ -19,6 +19,10 @@ export default async function handler(req, res) {
   if (!isValidAdmin) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
+    // Force cleanup before getting counts
+    const activeCutoff = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+    await supabase.from('devices').delete().lt('last_heartbeat', activeCutoff);
+
     if (req.method === 'GET') {
       // List all keys
       const { data: licenses } = await supabase
