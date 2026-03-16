@@ -106,7 +106,7 @@
         </section>
 
         <!-- Keys Table -->
-        <section class="table-wrap">
+        <section class="table-wrap" style="margin-bottom: 40px;">
             <table id="keysTable">
                 <thead>
                     <tr>
@@ -123,6 +123,32 @@
             </table>
             <div id="emptyState" class="empty-state">
                 No keys yet. Click "Create Key" to get started.
+            </div>
+        </section>
+
+        <!-- Actions -->
+        <section class="actions-bar">
+            <h2>Recent Activity Logs</h2>
+            <div class="actions-right">
+                <button id="btnRefreshLogs" class="btn btn-ghost">↻ Refresh Logs</button>
+            </div>
+        </section>
+
+        <!-- Logs Table -->
+        <section class="table-wrap">
+            <table id="logsTable">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>License / Label</th>
+                        <th>Device ID</th>
+                        <th>Domain Visited</th>
+                    </tr>
+                </thead>
+                <tbody id="logsBody"></tbody>
+            </table>
+            <div id="logsEmptyState" class="empty-state">
+                No activity logs available yet. Activity is only tracked when the extension is active.
             </div>
         </section>
     </div>
