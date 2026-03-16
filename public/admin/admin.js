@@ -30,6 +30,7 @@ $('#btnLogin').addEventListener('click', async () => {
         $('#dashboard').style.display = 'block';
         renderStats(res);
         loadKeys();
+        loadLogs();
     } catch (e) {
         $('#loginError').textContent = e.message || 'Connection failed';
         $('#btnLogin').textContent = 'Connect';
@@ -109,6 +110,32 @@ async function loadKeys() {
     if (!stats.error) renderStats(stats);
 }
 
+// ─── Logs ────────────────────────────────────────────────────────────────────
+async function loadLogs() {
+    const data = await api('/api/visits');
+    if (data.error) return;
+
+    const tbody = $('#logsBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const logs = data.logs || [];
+    $('#logsEmptyState').style.display = logs.length ? 'none' : 'block';
+    $('#logsTable').style.display = logs.length ? '' : 'none';
+
+    for (const l of logs) {
+        const tr = document.createElement('tr');
+        const timeStr = new Date(l.time).toLocaleString();
+        tr.innerHTML = `
+            <td>${timeStr}</td>
+            <td><strong>${l.label || '—'}</strong><br><small style="color:var(--text-muted)">${l.license.substring(0, 16)}...</small></td>
+            <td><span class="device-badge" title="${l.device}">${l.device.substring(0, 8)}...</span></td>
+            <td style="font-family: monospace; color: var(--primary);">${l.domain}</td>
+        `;
+        tbody.appendChild(tr);
+    }
+}
+
 // ─── Create Key ──────────────────────────────────────────────────────────────
 $('#btnCreate').addEventListener('click', () => {
     $('#createForm').style.display = $('#createForm').style.display === 'none' ? 'block' : 'none';
@@ -151,6 +178,10 @@ window.deleteKey = async function (license) {
 
 // ─── Refresh ─────────────────────────────────────────────────────────────────
 $('#btnRefresh').addEventListener('click', loadKeys);
+
+if ($('#btnRefreshLogs')) {
+    $('#btnRefreshLogs').addEventListener('click', loadLogs);
+}
 
 // ─── Copy ────────────────────────────────────────────────────────────────────
 window.copyKey = function (key) {
