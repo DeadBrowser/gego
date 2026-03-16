@@ -31,15 +31,21 @@ export default async function handler(req, res) {
       return res.status(200).json({ valid: false, error: 'License expired' });
     }
 
-    // 2. Count active devices (heartbeat in last 60 mins)
-    const activeCutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    // 2. Clean up inactive devices (auto-logout after 20 mins)
+    const activeCutoff = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+    await supabase
+      .from('devices')
+      .delete()
+      .eq('license_id', license.id)
+      .lt('last_heartbeat', activeCutoff);
+
+    // 3. Count remaining active devices
     const { count: activeCount } = await supabase
       .from('devices')
-      .select('id', { count: 'exact' })
-      .eq('license_id', license.id)
-      .gte('last_heartbeat', activeCutoff);
+      .select('id', { count: 'exact', head: true })
+      .eq('license_id', license.id);
 
-    // 3. Check if THIS device is registered
+    // 4. Check if THIS device is registered
     const { data: existingDevice } = await supabase
       .from('devices')
       .select('id')
