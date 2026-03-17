@@ -5,12 +5,11 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
-  // CORS is handled by vercel.json, but just in case for preflight:
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   try {
-    const { licenseKey, deviceId } = req.body;
+    const { licenseKey, deviceId, geo } = req.body;
     if (!licenseKey || !deviceId) {
       return res.status(400).json({ valid: false, error: 'Missing parameters' });
     }
@@ -18,7 +17,7 @@ export default async function handler(req, res) {
     // 1. Find License
     const { data: license, error: licErr } = await supabase
       .from('licenses')
-      .select('id, is_active, max_devices, expires_at')
+      .select('id, is_active, expires_at')
       .eq('key_string', licenseKey)
       .single();
 
@@ -26,7 +25,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ valid: false, error: 'Invalid or revoked license' });
     }
 
-    // Check expiration
     if (license.expires_at && new Date(license.expires_at) < new Date()) {
       return res.status(200).json({ valid: false, error: 'License expired' });
     }
@@ -39,13 +37,7 @@ export default async function handler(req, res) {
       .eq('license_id', license.id)
       .lt('last_heartbeat', activeCutoff);
 
-    // 3. Count remaining active devices
-    const { count: activeCount } = await supabase
-      .from('devices')
-      .select('id', { count: 'exact', head: true })
-      .eq('license_id', license.id);
-
-    // 4. Check if THIS device is registered
+    // 3. Update Device Heartbeat and Geo info
     const { data: existingDevice } = await supabase
       .from('devices')
       .select('id')
@@ -53,29 +45,23 @@ export default async function handler(req, res) {
       .eq('device_id', deviceId)
       .single();
 
-    if (!existingDevice && activeCount >= license.max_devices) {
-      return res.status(200).json({ valid: false, error: 'Device limit reached' });
-    }
-
-    // 4. Register or update device
     if (existingDevice) {
       await supabase
         .from('devices')
-        .update({ last_heartbeat: new Date().toISOString() })
+        .update({ 
+          last_heartbeat: new Date().toISOString(),
+          last_geo: geo || 'Unknown'
+        })
         .eq('id', existingDevice.id);
+      return res.status(200).json({ valid: true });
     } else {
-      await supabase
-        .from('devices')
-        .insert({
-          license_id: license.id,
-          device_id: deviceId,
-          last_heartbeat: new Date().toISOString()
-        });
+      // If the device isn't found, it means it was deleted due to inactivity.
+      // Return valid: false so the client logs out.
+      return res.status(200).json({ valid: false, error: 'Session expired due to inactivity' });
     }
 
-    return res.status(200).json({ valid: true, max_devices: license.max_devices });
   } catch (error) {
-    console.error('Validation error:', error);
+    console.error('Heartbeat error:', error);
     return res.status(500).json({ valid: false, error: 'Server error' });
   }
 }
