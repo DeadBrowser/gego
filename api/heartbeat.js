@@ -29,15 +29,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ valid: false, error: 'License expired' });
     }
 
-    // 2. Clean up inactive devices (auto-logout after 2 hours)
-    const activeCutoff = new Date(Date.now() - 120 * 60 * 1000).toISOString();
-    await supabase
-      .from('devices')
-      .delete()
-      .eq('license_id', license.id)
-      .lt('last_heartbeat', activeCutoff);
-
-    // 3. Update Device Heartbeat and Geo info
+    // 2. Update Device Heartbeat and Geo info
     const { data: existingDevice } = await supabase
       .from('devices')
       .select('id')
@@ -55,13 +47,15 @@ export default async function handler(req, res) {
         .eq('id', existingDevice.id);
       return res.status(200).json({ valid: true });
     } else {
-      // Device was cleaned up due to inactivity — re-register it if within device limit
+      // Device not found — re-register if within device limit
+      const activeCutoff = new Date(Date.now() - 120 * 60 * 1000).toISOString();
       const { count: activeCount } = await supabase
         .from('devices')
-        .select('id', { count: 'exact', head: true })
-        .eq('license_id', license.id);
+        .select('id', { count: 'exact' })
+        .eq('license_id', license.id)
+        .gte('last_heartbeat', activeCutoff);
 
-      if (activeCount >= (license.max_devices || 3)) {
+      if (activeCount >= license.max_devices) {
         return res.status(200).json({ valid: false, error: 'Device limit reached' });
       }
 
