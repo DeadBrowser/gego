@@ -19,17 +19,15 @@ export default async function handler(req, res) {
   if (!isValidAdmin) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    // Force cleanup before getting counts
-    const activeCutoff = new Date(Date.now() - 120 * 60 * 1000).toISOString();
-    await supabase.from('devices').delete().lt('last_heartbeat', activeCutoff);
-
     if (req.method === 'GET') {
-      // List all keys
+      // Count only active devices (heartbeat in last 2 hours)
+      const activeCutoff = new Date(Date.now() - 120 * 60 * 1000).toISOString();
+
       const { data: licenses } = await supabase
         .from('licenses')
         .select(`
           key_string, is_active, max_devices, expires_at, created_at,
-          devices (id)
+          devices (id, last_heartbeat)
         `)
         .order('created_at', { ascending: false });
 
@@ -38,7 +36,7 @@ export default async function handler(req, res) {
         label: l.key_string.split('-')[1] || '',
         active: l.is_active,
         maxDevices: l.max_devices,
-        deviceCount: l.devices ? l.devices.length : 0,
+        deviceCount: l.devices ? l.devices.filter(d => d.last_heartbeat >= activeCutoff).length : 0,
         createdAt: l.created_at,
         expiresAt: l.expires_at
       }));
