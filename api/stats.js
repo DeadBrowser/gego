@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 
   try {
     // Force cleanup before getting counts
-    const activeCutoff = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+    const activeCutoff = new Date(Date.now() - 120 * 60 * 1000).toISOString();
     await supabase.from('devices').delete().lt('last_heartbeat', activeCutoff);
 
     const { data: keys, error } = await supabase.from('licenses').select('is_active, expires_at');
