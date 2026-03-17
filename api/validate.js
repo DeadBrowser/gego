@@ -31,8 +31,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ valid: false, error: 'License expired' });
     }
 
-    // 2. Clean up inactive devices (auto-logout after 20 mins)
-    const activeCutoff = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+    // 2. Clean up inactive devices (auto-logout after 2 hours)
+    const activeCutoff = new Date(Date.now() - 120 * 60 * 1000).toISOString();
     await supabase
       .from('devices')
       .delete()
