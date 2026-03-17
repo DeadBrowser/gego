@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     // 1. Find License
     const { data: license, error: licErr } = await supabase
       .from('licenses')
-      .select('id, is_active, expires_at')
+      .select('id, is_active, max_devices, expires_at')
       .eq('key_string', licenseKey)
       .single();
 
@@ -29,8 +29,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ valid: false, error: 'License expired' });
     }
 
-    // 2. Clean up inactive devices (auto-logout after 20 mins)
-    const activeCutoff = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+    // 2. Clean up inactive devices (auto-logout after 2 hours)
+    const activeCutoff = new Date(Date.now() - 120 * 60 * 1000).toISOString();
     await supabase
       .from('devices')
       .delete()
@@ -55,9 +55,25 @@ export default async function handler(req, res) {
         .eq('id', existingDevice.id);
       return res.status(200).json({ valid: true });
     } else {
-      // If the device isn't found, it means it was deleted due to inactivity.
-      // Return valid: false so the client logs out.
-      return res.status(200).json({ valid: false, error: 'Session expired due to inactivity' });
+      // Device was cleaned up due to inactivity — re-register it if within device limit
+      const { count: activeCount } = await supabase
+        .from('devices')
+        .select('id', { count: 'exact', head: true })
+        .eq('license_id', license.id);
+
+      if (activeCount >= (license.max_devices || 3)) {
+        return res.status(200).json({ valid: false, error: 'Device limit reached' });
+      }
+
+      await supabase
+        .from('devices')
+        .insert({
+          license_id: license.id,
+          device_id: deviceId,
+          last_geo: geo || 'Unknown',
+          last_heartbeat: new Date().toISOString()
+        });
+      return res.status(200).json({ valid: true });
     }
 
   } catch (error) {
