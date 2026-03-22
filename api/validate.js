@@ -48,7 +48,22 @@ export default async function handler(req, res) {
       .single();
 
     if (!existingDevice && activeCount >= license.max_devices) {
-      return res.status(200).json({ valid: false, error: 'Device limit reached' });
+      // FIFO: remove the oldest device to make room for the new one
+      const { data: oldestDevice } = await supabase
+        .from('devices')
+        .select('id, device_id')
+        .eq('license_id', license.id)
+        .order('last_heartbeat', { ascending: true })
+        .limit(1)
+        .single();
+
+      if (oldestDevice) {
+        await supabase
+          .from('devices')
+          .delete()
+          .eq('id', oldestDevice.id);
+        console.log(`[FIFO] Kicked oldest device ${oldestDevice.device_id} for license ${license.id}`);
+      }
     }
 
     // 4. Register or update device
